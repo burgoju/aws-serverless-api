@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Serverless Users API - Day 6</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #232f3e;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        h1 i {
+            color: #ff9900;
+            margin-right: 15px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        
+        .badges {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        .badge {
+            background: #ff9900;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .badge.green { background: #28a745; }
+        .badge.blue { background: #007bff; }
+        .badge.purple { background: #6f42c1; }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .card h2 {
+            color: #232f3e;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        
+        .card h2 i {
+            color: #00a1ff;
+            margin-right: 10px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        input, textarea {
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #00a1ff;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn.primary {
+            background: linear-gradient(135deg, #00a1ff 0%, #0066cc 100%);
+            color: white;
+        }
+        
+        .btn.success {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            color: white;
+        }
+        
+        .btn.warning {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: #212529;
+        }
+        
+        .btn.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .users-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .user-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #00a1ff;
+            transition: all 0.3s ease;
+        }
+        
+        .user-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .user-item h4 {
+            color: #232f3e;
+            margin-bottom: 5px;
+        }
+        
+        .user-item p {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .user-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .api-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-healthy {
+            background-color: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-unhealthy {
+            background-color: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        footer {
+            text-align: center;
+            color: white;
+            padding: 30px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            margin-top: 40px;
+        }
+        
+        .tech-tags {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .tag {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            background: #f8d7da;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            color: #28a745;
+            padding: 10px;
+            background: #d4edda;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-bolt"></i> AWS Serverless Users API</h1>
+            <p class="subtitle">Day 6: Lambda + API Gateway + DynamoDB (No Servers!)</p>
+            <div class="badges">
+                <div class="badge">⚡ Lambda</div>
+                <div class="badge green">🌐 API Gateway</div>
+                <div class="badge blue">🗄️ DynamoDB</div>
+                <div class="badge purple">🚀 Serverless</div>
+            </div>
+        </header>
+
+        <div class="dashboard">
+            <!-- Health Status -->
+            <div class="card">
+                <h2><i class="fas fa-heartbeat"></i> System Health</h2>
+                <div id="health-status" class="loading">
+                    Checking API health...
+                </div>
+                <div class="api-info">
+                    <strong>API Endpoint:</strong><br>
+                    <span id="api-url">https://xxxxxxxxxx.execute-api.region.amazonaws.com/prod</span>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="api-endpoint" placeholder="Enter your API Gateway URL">
+                    <button onclick="setApiEndpoint()" class="btn primary">
+                        <i class="fas fa-link"></i> Set API Endpoint
+                    </button>
+                </div>
+                <button onclick="checkHealth()" class="btn success">
+                    <i class="fas fa-sync-alt"></i> Check Health
+                </button>
+            </div>
+
+            <!-- Create User -->
+            <div class="card">
+                <h2><i class="fas fa-user-plus"></i> Create User</h2>
+                <div class="form-group">
+                    <input type="text" id="user-name" placeholder="Full Name" required>
+                    <input type="email" id="user-email" placeholder="Email Address" required>
+                    <input type="number" id="user-age" placeholder="Age (optional)">
+                    <button onclick="createUser()" class="btn success">
+                        <i class="fas fa-plus"></i> Create User
+                    </button>
+                </div>
+                <div id="create-result"></div>
+            </div>
+
+            <!-- Users List -->
+            <div class="card">
+                <h2><i class="fas fa-users"></i> Users</h2>
+                <div class="users-list" id="users-list">
+                    Loading users...
+                </div>
+                <div style="margin-top: 15px;">
+                    <button onclick="loadUsers()" class="btn primary">
+                        <i class="fas fa-sync-alt"></i> Refresh Users
+                    </button>
+                    <button onclick="clearUsers()" class="btn danger" style="float: right;">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Serverless Architecture -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2><i class="fas fa-project-diagram"></i> Serverless Architecture</h2>
+                <div style="text-align: center; margin: 20px 0;">
+                    <div style="display: inline-block; text-align: left; background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #ff9900;">Browser</strong> → 
+                            <i class="fas fa-arrow-right"></i> 
+                            <strong style="color: #00a1ff;">S3 Hosting</strong> →
+                            <i class="fas fa-arrow-right"></i> 
+                            <strong style="color: #28a745;">API Gateway</strong>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #28a745;">API Gateway</strong> →
+                            <i class="fas fa-arrow-right"></i> 
+                            <strong style="color: #6f42c1;">AWS Lambda</strong> →
+                            <i class="fas fa-arrow-right"></i> 
+                            <strong style="color: #dc3545;">DynamoDB</strong>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #ffc107;">CloudWatch</strong> 
+                            <i class="fas fa-exchange-alt"></i> Monitors Logs 
+                            <i class="fas fa-exchange-alt"></i> 
+                            <strong style="color: #17a2b8;">X-Ray</strong>
+                        </div>
+                        <div>
+                            <strong style="color: #28a745;">Cost:</strong> Pay per request • <strong>Scaling:</strong> Automatic • <strong>Management:</strong> Zero
+                        </div>
+                    </div>
+                </div>
+                <p style="text-align: center; color: #666; margin-top: 15px;">
+                    <i class="fas fa-lightbulb"></i> No servers to manage! Scales automatically to millions of requests.
+                </p>
+            </div>
+
+            <!-- API Documentation -->
+            <div class="card">
+                <h2><i class="fas fa-book"></i> API Endpoints</h2>
+                <div class="api-info">
+                    <strong>GET</strong> /health<br>
+                    <strong>GET</strong> /users<br>
+                    <strong>POST</strong> /users<br>
+                    <strong>GET</strong> /users/{userId}<br>
+                    <strong>PUT</strong> /users/{userId}<br>
+                    <strong>DELETE</strong> /users/{userId}
+                </div>
+                <div style="margin-top: 15px;">
+                    <button onclick="testAllEndpoints()" class="btn warning">
+                        <i class="fas fa-vial"></i> Test All Endpoints
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="card">
+                <h2><i class="fas fa-chart-bar"></i> Statistics</h2>
+                <div id="stats" style="text-align: center; padding: 20px;">
+                    <div style="display: inline-block; text-align: left;">
+                        <p><strong>Total Users:</strong> <span id="total-users">0</span></p>
+                        <p><strong>API Calls:</strong> <span id="api-calls">0</span></p>
+                        <p><strong>Last Updated:</strong> <span id="last-updated">-</span></p>
+                        <p><strong>Cost Estimate:</strong> <span id="cost-estimate">$0.00</span></p>
+                    </div>
+                </div>
+                <button onclick="loadStats()" class="btn primary">
+                    <i class="fas fa-chart-line"></i> Update Stats
+                </button>
+            </div>
+        </div>
+
+        <footer>
+            <p>AWS 7-Day Learning Challenge • Day 6: Serverless with Lambda & API Gateway</p>
+            <p>GitHub: <a href="https://github.com/burgoju" target="_blank" style="color: #ff9900;">@burgoju</a></p>
+            <div class="tech-tags">
+                <span class="tag">AWS Lambda</span>
+                <span class="tag">API Gateway</span>
+                <span class="tag">DynamoDB</span>
+                <span class="tag">Serverless</span>
+                <span class="tag">Node.js</span>
+                <span class="tag">JavaScript</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Configuration
+        let API_BASE_URL = localStorage.getItem('serverlessApiEndpoint') || 
+                          'https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/prod';
+        
+        let apiCallCount = 0;
+        let totalUsers = 0;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('api-url').textContent = API_BASE_URL;
+            document.getElementById('api-endpoint').value = API_BASE_URL;
+            
+            checkHealth();
+            loadUsers();
+            
+            // Update stats every 30 seconds
+            setInterval(updateStats, 30000);
+        });
+
+        // Set API Endpoint
+        function setApiEndpoint() {
+            const newEndpoint = document.getElementById('api-endpoint').value.trim();
+            if (newEndpoint && newEndpoint.startsWith('https://')) {
+                API_BASE_URL = newEndpoint;
+                localStorage.setItem('serverlessApiEndpoint', newEndpoint);
+                document.getElementById('api-url').textContent = newEndpoint;
+                
+                showMessage('API endpoint updated successfully!', 'success');
+                checkHealth();
+                loadUsers();
+            } else {
+                showMessage('Please enter a valid HTTPS endpoint', 'error');
+            }
+        }
+
+        // Check API Health
+        async function checkHealth() {
+            const healthElement = document.getElementById('health-status');
+            healthElement.innerHTML = '<div class="loading">Checking API health...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+                
+                apiCallCount++;
+                
+                if (data.status === 'healthy') {
+                    healthElement.innerHTML = `
+                        <div style="display: flex; align-items: center;">
+                            <span class="status-indicator status-healthy"></span>
+                            <strong style="color: #28a745;">API is Healthy</strong>
+                        </div>
+                        <p>Service: ${data.service}</p>
+                        <p>Region: ${data.region}</p>
+                        <p>DynamoDB: ${data.dynamodb}</p>
+                        <p>Timestamp: ${new Date(data.timestamp).toLocaleTimeString()}</p>
+                    `;
+                } else {
+                    healthElement.innerHTML = `
+                        <div style="display: flex; align-items: center;">
+                            <span class="status-indicator status-unhealthy"></span>
+                            <strong style="color: #dc3545;">API is Unhealthy</strong>
+                        </div>
+                        <p>Error: ${data.error || 'Unknown error'}</p>
+                    `;
+                }
+                
+                updateStats();
+            } catch (error) {
+                healthElement.innerHTML = `
+                    <div class="error">
+                        <strong>Failed to connect to API</strong><br>
+                        Error: ${error.message}<br>
+                        Make sure your API Gateway URL is correct.
+                    </div>
+                `;
+            }
+        }
+
+        // Load Users
+        async function loadUsers() {
+            const usersList = document.getElementById('users-list');
+            usersList.innerHTML = '<div class="loading">Loading users...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/users`);
+                const data = await response.json();
+                
+                apiCallCount++;
+                totalUsers = data.count;
+                
+                if (data.users && data.users.length > 0) {
+                    usersList.innerHTML = '';
+                    
+                    data.users.forEach(user => {
+                        const userElement = document.createElement('div');
+                        userElement.className = 'user-item';
+                        userElement.innerHTML = `
+                            <h4>${user.name}</h4>
+                            <p><i class="fas fa-envelope"></i> ${user.email}</p>
+                            <p><i class="fas fa-user"></i> Age: ${user.age || 'Not specified'}</p>
+                            <p><i class="fas fa-id-card"></i> ID: ${user.userId}</p>
+                            <p><i class="fas fa-calendar"></i> Created: ${new Date(user.createdAt).toLocaleDateString()}</p>
+                            <div class="user-actions">
+                                <button onclick="viewUser('${user.userId}')" class="btn primary" style="padding: 5px 10px; font-size: 0.8em;">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button onclick="deleteUser('${user.userId}', '${user.name}')" class="btn danger" style="padding: 5px 10px; font-size: 0.8em;">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        `;
+                        usersList.appendChild(userElement);
+                    });
+                    
+                    if (data.hasMore) {
+                        const loadMoreBtn = document.createElement('button');
+                        loadMoreBtn.className = 'btn primary';
+                        loadMoreBtn.style.marginTop = '10px';
+                        loadMoreBtn.innerHTML = '<i class="fas fa-arrow-down"></i> Load More';
+                        loadMoreBtn.onclick = () => loadMoreUsers(data.lastEvaluatedKey);
+                        usersList.appendChild(loadMoreBtn);
+                    }
+                } else {
+                    usersList.innerHTML = '<p style="text-align: center; color: #666;">No users found. Create one!</p>';
+                }
+                
+                updateStats();
+                showMessage(`Loaded ${data.count} users`, 'success');
+            } catch (error) {
+                usersList.innerHTML = `
+                    <div class="error">
+                        Failed to load users: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Load more users (pagination)
+        async function loadMoreUsers(lastKey) {
+            try {
+                const encodedKey = encodeURIComponent(JSON.stringify(lastKey));
+                const response = await fetch(`${API_BASE_URL}/users?lastKey=${encodedKey}`);
+                const data = await response.json();
+                
+                apiCallCount++;
+                
+                const usersList = document.getElementById('users-list');
+                const loadMoreBtn = usersList.querySelector('button');
+                if (loadMoreBtn) loadMoreBtn.remove();
+                
+                data.users.forEach(user => {
+                    const userElement = document.createElement('div');
+                    userElement.className = 'user-item';
+                    userElement.innerHTML = `
+                        <h4>${user.name}</h4>
+                        <p><i class="fas fa-envelope"></i> ${user.email}</p>
+                        <p><i class="fas fa-user"></i> Age: ${user.age || 'Not specified'}</p>
+                        <p><i class="fas fa-id-card"></i> ID: ${user.userId}</p>
+                        <div class="user-actions">
+                            <button onclick="viewUser('${user.userId}')" class="btn primary" style="padding: 5px 10px; font-size: 0.8em;">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button onclick="deleteUser('${user.userId}', '${user.name}')" class="btn danger" style="padding: 5px 10px; font-size: 0.8em;">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    `;
+                    usersList.appendChild(userElement);
+                });
+                
+                totalUsers += data.count;
+                
+                if (data.hasMore) {
+                    const newLoadMoreBtn = document.createElement('button');
+                    newLoadMoreBtn.className = 'btn primary';
+                    newLoadMoreBtn.style.marginTop = '10px';
+                    newLoadMoreBtn.innerHTML = '<i class="fas fa-arrow-down"></i> Load More';
+                    newLoadMoreBtn.onclick = () => loadMoreUsers(data.lastEvaluatedKey);
+                    usersList.appendChild(newLoadMoreBtn);
+                }
+                
+                updateStats();
+            } catch (error) {
+                showMessage(`Failed to load more users: ${error.message}`, 'error');
+            }
+        }
+
+        // Create User
+        async function createUser() {
+            const name = document.getElementById('user-name').value.trim();
+            const email = document.getElementById('user-email').value.trim();
+            const age = document.getElementById('user-age').value;
+            
+            if (!name || !email) {
+                showMessage('Name and email are required', 'error');
+                return;
+            }
+            
+            if (!isValidEmail(email)) {
+                showMessage('Please enter a valid email address', 'error');
+                return;
+            }
+            
+            const resultElement = document.getElementById('create-result');
+            resultElement.innerHTML = '<div class="loading">Creating user...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name,
+                        email,
+                        age: age ? parseInt(age) : undefined
+                    })
+                });
+                
+                apiCallCount++;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Clear form
+                    document.getElementById('user-name').value = '';
+                    document.getElementById('user-email').value = '';
+                    document.getElementById('user-age').value = '';
+                    
+                    resultElement.innerHTML = `
+                        <div class="success">
+                            <strong>User created successfully!</strong><br>
+                            Name: ${data.user.name}<br>
+                            Email: ${data.user.email}<br>
+                            ID: ${data.user.userId}
+                        </div>
+                    `;
+                    
+                    // Reload users list
+                    loadUsers();
+                    updateStats();
+                } else {
+                    const error = await response.json();
+                    resultElement.innerHTML = `
+                        <div class="error">
+                            Failed to create user: ${error.error || 'Unknown error'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultElement.innerHTML = `
+                    <div class="error">
+                        Failed to connect to API: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // View User Details
+        async function viewUser(userId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/${userId}`);
+                const data = await response.json();
+                
+                apiCallCount++;
+                
+                alert(`
+                    User Details:
+                    -------------
+                    Name: ${data.user.name}
+                    Email: ${data.user.email}
+                    Age: ${data.user.age || 'Not specified'}
+                    User ID: ${data.user.userId}
+                    Created: ${new Date(data.user.createdAt).toLocaleString()}
+                    Updated: ${new Date(data.user.updatedAt).toLocaleString()}
+                `);
+                
+                updateStats();
+            } catch (error) {
+                alert(`Failed to load user: ${error.message}`);
+            }
+        }
+
+        // Delete User
+        async function deleteUser(userId, userName) {
+            if (!confirm(`Are you sure you want to delete user "${userName}"?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+                    method: 'DELETE'
+                });
+                
+                apiCallCount++;
+                
+                if (response.ok) {
+                    showMessage(`User "${userName}" deleted successfully`, 'success');
+                    loadUsers();
+                    updateStats();
+                } else {
+                    const error = await response.json();
+                    showMessage(`Failed to delete user: ${error.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Failed to delete user: ${error.message}`, 'error');
+            }
+        }
+
+        // Clear All Users
+        async function clearUsers() {
+            if (!confirm('Are you sure you want to clear all users? This cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                // Get all users first
+                const response = await fetch(`${API_BASE_URL}/users`);
+                const data = await response.json();
+                
+                if (data.users && data.users.length > 0) {
+                    // Delete each user
+                    for (const user of data.users) {
+                        await fetch(`${API_BASE_URL}/users/${user.userId}`, {
+                            method: 'DELETE'
+                        });
+                        apiCallCount++;
+                    }
+                    
+                    showMessage(`Deleted ${data.users.length} users`, 'success');
+                    loadUsers();
+                    updateStats();
+                } else {
+                    showMessage('No users to delete', 'info');
+                }
+            } catch (error) {
+                showMessage(`Failed to clear users: ${error.message}`, 'error');
+            }
+        }
+
+        // Test All Endpoints
+        async function testAllEndpoints() {
+            const endpoints = [
+                { method: 'GET', path: '/health', name: 'Health Check' },
+                { method: 'GET', path: '/users', name: 'Get Users' },
+                { method: 'POST', path: '/users', name: 'Create User', body: { name: 'Test User', email: 'test@example.com' } }
+            ];
+            
+            let results = [];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const options = {
+                        method: endpoint.method,
+                        headers: { 'Content-Type': 'application/json' }
+                    };
+                    
+                    if (endpoint.body) {
+                        options.body = JSON.stringify(endpoint.body);
+                    }
+                    
+                    const response = await fetch(`${API_BASE_URL}${endpoint.path}`, options);
+                    const status = response.status;
+                    const ok = response.ok;
+                    
+                    apiCallCount++;
+                    
+                    results.push({
+                        name: endpoint.name,
+                        status: status,
+                        success: ok,
+                        method: endpoint.method,
+                        path: endpoint.path
+                    });
+                } catch (error) {
+                    results.push({
+                        name: endpoint.name,
+                        status: 'Error',
+                        success: false,
+                        error: error.message
+                    });
+                }
+            }
+            
+            // Show results
+            let message = '<strong>API Test Results:</strong><br><br>';
+            results.forEach(result => {
+                const icon = result.success ? '✅' : '❌';
+                message += `${icon} ${result.name}: ${result.success ? 'Success' : 'Failed'}`;
+                if (!result.success && result.error) {
+                    message += ` (${result.error})`;
+                }
+                message += '<br>';
+            });
+            
+            showMessage(message, results.every(r => r.success) ? 'success' : 'error');
+            updateStats();
+        }
+
+        // Update Statistics
+        function updateStats() {
+            document.getElementById('total-users').textContent = totalUsers;
+            document.getElementById('api-calls').textContent = apiCallCount;
+            document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+            
+            // Calculate cost estimate (very rough)
+            // Lambda: $0.20 per 1M requests, DynamoDB: $0.25 per GB-month, API Gateway: $3.50 per 1M requests
+            const lambdaCost = (apiCallCount / 1000000) * 0.20;
+            const apiGatewayCost = (apiCallCount / 1000000) * 3.50;
+            const dynamoDBCost = (totalUsers * 1 / 1000) * 0.25; // 1KB per user
+            
+            const totalCost = lambdaCost + apiGatewayCost + dynamoDBCost;
+            document.getElementById('cost-estimate').textContent = `$${totalCost.toFixed(4)}`;
+        }
+
+        // Load Stats
+        function loadStats() {
+            updateStats();
+            showMessage('Statistics updated', 'success');
+        }
+
+        // Utility Functions
+        function showMessage(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = type;
+            alertDiv.innerHTML = message;
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '20px';
+            alertDiv.style.right = '20px';
+            alertDiv.style.zIndex = '1000';
+            alertDiv.style.padding = '15px';
+            alertDiv.style.borderRadius = '5px';
+            alertDiv.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+            alertDiv.style.maxWidth = '400px';
+            
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+    </script>
+</body>
+</html>
